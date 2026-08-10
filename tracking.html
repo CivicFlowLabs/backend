@@ -149,15 +149,15 @@
     </div>
     <div class="card">
       <div class="label">Repository</div>
-      <div class="value mono" style="font-size:13px">CivicFlowLabs/backend<br><small>chưa push lần đầu</small></div>
+      <div class="value mono" style="font-size:13px">CivicFlowLabs/backend<br><small>đã push main, dev</small></div>
     </div>
     <div class="card">
       <div class="label">Nhánh</div>
-      <div class="value mono" style="font-size:13px">main · dev<br><small>feature/backend-foundation</small></div>
+      <div class="value mono" style="font-size:13px">main · dev<br><small>feature/api-response-envelope</small></div>
     </div>
     <div class="card">
       <div class="label">Commit hiện tại</div>
-      <div class="value mono" style="font-size:13px">1199078<br><small>feat(backend): scaffold…</small></div>
+      <div class="value mono" style="font-size:13px">5f1ac9f<br><small>feat(api): uniform response envelope…</small></div>
     </div>
     <div class="card">
       <div class="label">Module</div>
@@ -179,19 +179,24 @@
       <div class="pct">20%</div>
     </div>
     <div class="bar-row">
+      <div class="name">Nền tảng API</div>
+      <div class="bar"><span style="width:100%"></span></div>
+      <div class="pct">100%</div>
+    </div>
+    <div class="bar-row">
       <div class="name">Xác thực &amp; phân quyền</div>
       <div class="bar"><span style="width:0%"></span></div>
       <div class="pct">0%</div>
     </div>
     <div class="bar-row">
-      <div class="name">Độ phủ kiểm thử</div>
-      <div class="bar"><span style="width:0%"></span></div>
-      <div class="pct">0%</div>
+      <div class="name">Kiểm thử</div>
+      <div class="bar"><span style="width:35%"></span></div>
+      <div class="pct">35%</div>
     </div>
   </div>
   <div class="note">
     Phần trăm tổng thể của cả dự án chưa tính được vì backlog đầy đủ (BE-04 trở đi) chưa được đưa vào file này.
-    Ba mốc W1 dưới đây lấy đúng theo bảng kế hoạch của nhóm.
+    Thanh "Sprint W1" lấy đúng theo bảng kế hoạch của nhóm; các thanh còn lại là ước lượng theo khối lượng đã hoàn thành trong mã nguồn.
   </div>
 
   <!-- ===================== SPRINT HIỆN TẠI ===================== -->
@@ -207,7 +212,7 @@
     </div>
     <div class="card">
       <div class="label">Task đang làm</div>
-      <div class="value">Không có <small>· BE-01→BE-03 đã đóng, chờ giao task kế tiếp</small></div>
+      <div class="value">Không có <small>· nền tảng API đã xong, chờ giao task kế tiếp (dự kiến: xác thực JWT)</small></div>
     </div>
   </div>
 
@@ -262,7 +267,7 @@
               <li><code>docker-compose.yml</code></li>
             </ul>
           </td>
-          <td><span class="tag t-warn">⚠️ Chưa chạy <code>docker compose up</code> để xác nhận</span></td>
+          <td><span class="tag t-ok">✅ <code>civicflow-postgres</code> (healthy) + <code>civicflow-redis</code> đang chạy, API kết nối được</span></td>
         </tr>
         <tr>
           <td><strong>BE-03</strong></td>
@@ -285,16 +290,49 @@
           </td>
           <td>
             <span class="tag t-ok">✅ Migration sinh thành công</span><br>
-            <span class="tag t-warn" style="margin-top:4px">⚠️ Chưa apply lên DB thật, chưa gọi <code>/api/v1/health/db</code></span>
+            <span class="tag t-ok" style="margin-top:4px">✅ Đã gọi <code>/api/v1/health/db</code> → PostGIS 3.5, 3 đơn vị hành chính</span>
+          </td>
+        </tr>
+        <tr>
+          <td><strong>API</strong></td>
+          <td>Nền tảng</td>
+          <td>
+            Middleware lỗi, phong bì phản hồi chung, phân trang, versioning <code>/api/v1</code>, mã tương quan
+            <br><small style="color:var(--muted)">Tiêu chí: mọi API trả cùng một định dạng, mọi phản hồi có mã tương quan</small>
+          </td>
+          <td class="mono">10/08/2026</td>
+          <td>
+            <ul>
+              <li><code>Shared/Api/*.cs</code> (7 file: envelope, lỗi, phân trang, route)</li>
+              <li><code>Shared/Exceptions/AppException.cs</code></li>
+              <li><code>Infrastructure/Persistence/QueryablePagingExtensions.cs</code></li>
+              <li><code>Api/Middleware/{CorrelationId,ExceptionHandling}Middleware.cs</code></li>
+              <li><code>Api/Filters/ApiResponseWrappingFilter.cs</code></li>
+              <li><code>Api/Http/ApiErrorFactory.cs</code></li>
+              <li><code>Api/Controllers/HealthController.cs</code>, <code>Api/Contracts/</code></li>
+              <li><code>Api/Program.cs</code>, <code>README.md</code></li>
+              <li><code>tests/CivicFlow.Tests/Api/*.cs</code> (4 file)</li>
+            </ul>
+          </td>
+          <td>
+            <code>5f1ac9f</code><br>
+            <small style="color:var(--muted)">feat(api): add uniform response envelope, error handling and pagination</small>
+          </td>
+          <td>
+            <span class="tag t-ok">✅ Build 0 warning</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ 31/31 test pass</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Gọi thật: 200, 404, 405, mã tương quan</span>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
   <div class="note">
-    <strong>Ghi chú nghiệm thu:</strong> đã xác minh <code>dotnet build</code> (0 warning, 0 error) và <code>dotnet test</code> (1 test pass — nhưng là test rỗng).
-    Chưa xác minh: khởi động Docker, apply migration lên PostgreSQL, gọi thử endpoint health.
-    Ba mục này cần chạy tay trước khi coi BE-02/BE-03 là đóng hoàn toàn.
+    <strong>Ghi chú nghiệm thu:</strong> đã xác minh <code>dotnet build</code> (0 warning, 0 error), <code>dotnet test</code> (31/31 pass),
+    hai container của <code>docker-compose.yml</code> đang chạy, và gọi thật qua HTTP các nhánh 200 / 404 / 405 / mã tương quan.
+    <br><br>
+    <strong>Chưa xác minh:</strong> nhánh lỗi 500 và lỗi kiểm tra dữ liệu mới chỉ được phủ bằng unit test, chưa có endpoint thật nào kích hoạt
+    (sẽ kiểm chứng khi làm module Reports). Endpoint 503 khi mất kết nối CSDL cũng chưa chạy thử trong điều kiện thật.
   </div>
 
   <!-- ===================== CÒN LẠI ===================== -->
@@ -306,14 +344,9 @@
       </thead>
       <tbody>
         <tr>
-          <td>Nghiệm thu W1</td>
-          <td>Chạy <code>docker compose up</code>, apply <code>InitIdentity</code> lên DB, gọi <code>GET /api/v1/health/db</code> để đóng dứt điểm BE-02 &amp; BE-03</td>
-          <td><span class="tag t-crit">Cao</span></td>
-        </tr>
-        <tr>
           <td>Nền tảng API</td>
-          <td>Dựng lại response envelope (<code>data</code> / <code>error</code> / <code>pagination</code>), middleware xử lý lỗi, correlation ID, <code>ICurrentUser</code></td>
-          <td><span class="tag t-crit">Cao</span></td>
+          <td>Còn thiếu <code>ICurrentUser</code> — sẽ làm cùng bước xác thực. Phần envelope, middleware lỗi, phân trang, versioning và mã tương quan đã xong</td>
+          <td><span class="tag t-warn">Trung bình</span></td>
         </tr>
         <tr>
           <td>Xác thực</td>
@@ -347,12 +380,7 @@
         </tr>
         <tr>
           <td>Kiểm thử</td>
-          <td>Thay test rỗng bằng unit test thật + integration test (cần thêm <code>public partial class Program</code>)</td>
-          <td><span class="tag t-warn">Trung bình</span></td>
-        </tr>
-        <tr>
-          <td>Tài liệu</td>
-          <td>Viết <code>README</code>: cách chạy Docker, apply migration, chạy API</td>
+          <td>Đã có 31 test cho tầng nền tảng API. Còn thiếu test cho tầng dữ liệu và nghiệp vụ của từng module</td>
           <td><span class="tag t-warn">Trung bình</span></td>
         </tr>
       </tbody>
@@ -393,17 +421,12 @@
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>
-          <td>Endpoint health inject thẳng <code>IdentityDbContext</code> vào tầng Api — phá vỡ đóng gói module (CLAUDE.md §7). Nên chuyển sang <code>IModuleHealthContributor</code></td>
-          <td class="mono">Api/Program.cs:40</td>
+          <td><code>HealthController</code> inject thẳng <code>IdentityDbContext</code> vào tầng Api — phá vỡ đóng gói module (CLAUDE.md §7). Nên chuyển sang <code>IModuleHealthContributor</code> do từng module tự cung cấp</td>
+          <td class="mono">Api/Controllers/HealthController.cs</td>
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>
-          <td>Endpoint health không dùng response envelope, không có DTO, không nhận <code>CancellationToken</code> — trái CLAUDE.md §12</td>
-          <td class="mono">Api/Program.cs:40</td>
-        </tr>
-        <tr>
-          <td><span class="tag t-warn">Trung bình</span></td>
-          <td>4 gói NuGet đã tham chiếu nhưng chưa dùng dòng nào: BCrypt.Net-Next, FluentValidation.AspNetCore, JwtBearer, Serilog.AspNetCore</td>
+          <td>4 gói NuGet vẫn chưa dùng dòng nào: BCrypt.Net-Next, FluentValidation.AspNetCore, JwtBearer, Serilog.AspNetCore. Serilog chưa được nối vào nên mã tương quan mới chỉ nằm trong logging scope mặc định</td>
           <td class="mono">Api/CivicFlow.Api.csproj</td>
         </tr>
         <tr>
@@ -413,7 +436,7 @@
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>
-          <td><code>FluentAssertions 8.10.0</code> dùng giấy phép Xceed — bản thương mại phải trả phí. Cân nhắc lùi về 6.12.x (MIT) hoặc đổi sang Shouldly</td>
+          <td><code>FluentAssertions 8.10.0</code> dùng giấy phép Xceed — bản thương mại phải trả phí. Bộ test hiện dùng assert thuần của xUnit nên gói này đang thừa; gỡ hẳn là xong</td>
           <td class="mono">tests/CivicFlow.Tests.csproj</td>
         </tr>
         <tr>
