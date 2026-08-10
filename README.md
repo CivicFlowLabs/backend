@@ -168,9 +168,50 @@ Mỗi module có `DbContext` riêng, bộ migration riêng và bảng lịch s�
 - Enum lưu dạng chuỗi `snake_case`, kèm ràng buộc `CHECK` khi phù hợp.
 - Dữ liệu không gian dùng SRID `4326`: `geometry(Point, 4326)` cho vị trí phản ánh, `geometry(MultiPolygon, 4326)` cho ranh giới hành chính, kèm index GIST.
 
+### Định dạng phản hồi
+
+Mọi endpoint trả về cùng một phong bì, kể cả lỗi phát sinh trước khi vào controller (đường dẫn sai, sai phương thức HTTP).
+
+Thành công:
+
+```json
+{ "data": { "database": "ok", "postGis": "3.5 USE_GEOS=1", "administrativeUnits": 3 } }
+```
+
+Danh sách có phân trang:
+
+```json
+{
+  "data": [ { "id": "..." } ],
+  "pagination": { "page": 1, "pageSize": 20, "totalItems": 137, "totalPages": 7, "hasPrevious": false, "hasNext": true }
+}
+```
+
+Thất bại:
+
+```json
+{
+  "data": null,
+  "error": {
+    "code": "validation_error",
+    "message": "Dữ liệu gửi lên không hợp lệ.",
+    "details": { "email": ["Email không hợp lệ."] },
+    "correlationId": "9f2c1ab4e7d24f0c8b5a"
+  }
+}
+```
+
+Quy ước: `data` luôn xuất hiện, `error` chỉ có khi thất bại, `pagination` chỉ có ở endpoint danh sách. Client chỉ cần kiểm tra sự tồn tại của `error`.
+
+Controller trả về DTO thuần hoặc `PagedResult<T>`; việc dựng phong bì do bộ lọc toàn cục lo. Mã lỗi ổn định nằm trong `ErrorCodes` — client nên bắt theo `code` thay vì so khớp `message`.
+
+### Mã tương quan
+
+Mọi phản hồi đều kèm header `X-Correlation-Id`. Client có thể tự gửi mã lên để nối log hai phía; mã không hợp lệ (quá 64 ký tự hoặc chứa ký tự ngoài chữ, số và dấu gạch ngang) sẽ bị thay bằng mã mới. Phản hồi lỗi lặp lại mã này trong `error.correlationId` để người dùng gửi cho bộ phận hỗ trợ.
+
 ### API
 
-- REST, gắn phiên bản theo tiền tố `/api/v1`.
+- REST, gắn phiên bản theo tiền tố `/api/v1` — khai báo qua hằng `ApiRoutes.Controller`.
 - Không trả entity EF Core trực tiếp — luôn qua Request/Response DTO.
 - Mọi endpoint danh sách đều phải phân trang.
 - Dùng FluentValidation để kiểm tra dữ liệu đầu vào.
