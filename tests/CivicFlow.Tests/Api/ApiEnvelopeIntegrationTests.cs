@@ -84,8 +84,10 @@ public class ApiEnvelopeIntegrationTests : IClassFixture<CivicFlowApiFactory>
 }
 
 /// <summary>
-/// Dựng máy chủ in-memory. Chuỗi kết nối chỉ cần tồn tại để module Identity
-/// đăng ký được DbContext — các test trong lớp này không mở kết nối thật.
+/// Dựng máy chủ in-memory. Chuỗi kết nối chỉ cần tồn tại về mặt cú pháp để
+/// module Identity đăng ký được DbContext — các test trong lớp này không mở
+/// kết nối thật, nên đây là giá trị giả và không được chứa thông tin đăng
+/// nhập của bất kỳ môi trường nào.
 /// </summary>
 public sealed class CivicFlowApiFactory : WebApplicationFactory<Program>
 {
@@ -93,6 +95,6 @@ public sealed class CivicFlowApiFactory : WebApplicationFactory<Program>
     {
         builder.UseSetting(
             "ConnectionStrings:Default",
-            "Host=localhost;Port=5432;Database=civicflow_test;Username=civicflow;Password=civicflow");
+            "Host=localhost;Port=5432;Database=civicflow_test;Username=test;Password=test");
     }
 }
