@@ -122,10 +122,15 @@ Toàn bộ thông tin nhạy cảm nằm trong `.env`, không nằm trong mã ng
 | --- | --- |
 | `POSTGRES_PASSWORD` | `docker-compose.yml` khi dựng PostgreSQL |
 | `ConnectionStrings__Default` | API và lệnh `dotnet ef` |
+| `Jwt__SecretKey` | Khoá ký JWT, tối thiểu 32 byte |
 
 Dấu gạch dưới đôi là quy ước của .NET: `ConnectionStrings__Default` được ánh xạ sang khoá cấu hình `ConnectionStrings:Default`, nhờ đó API và EF Core tooling dùng chung đúng một biến.
 
 Design-time factory **không có chuỗi kết nối mặc định**. Thiếu biến môi trường thì `dotnet ef` báo lỗi kèm hướng dẫn, thay vì âm thầm chạy bằng thông tin đăng nhập nhúng sẵn trong mã nguồn.
+
+Tương tự, **khoá JWT không có giá trị mặc định**. Thiếu `Jwt__SecretKey` thì API dừng ngay lúc khởi động. Đây là chủ ý: một khoá dự phòng trong mã nguồn nghĩa là khi quên cấu hình lúc triển khai, hệ thống vẫn chạy bình thường bằng khoá mà ai đọc kho mã cũng thấy — và ai có khoá thì tự ký được token với bất kỳ vai trò nào.
+
+Ngược lại, `Jwt:Issuer` và `Jwt:Audience` **có** giá trị mặc định trong mã nguồn. Chúng là định danh công khai, không phải bí mật.
 
 > **Không commit mật khẩu, khoá JWT hay thông tin đăng nhập dịch vụ ngoài.**
 > Mã nguồn nằm trong kho công khai — mọi thứ đã commit đều tồn tại vĩnh viễn trong lịch sử Git, kể cả khi xoá đi ở commit sau.
