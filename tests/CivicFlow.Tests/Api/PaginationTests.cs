@@ -5,7 +5,7 @@ namespace CivicFlow.Tests.Api;
 public class PageRequestTests
 {
     [Fact]
-    public void MacDinh_TraVeTrangDauVaKichThuocMacDinh()
+    public void Defaults_UseFirstPageAndDefaultPageSize()
     {
         var request = new PageRequest();
 
@@ -17,7 +17,7 @@ public class PageRequestTests
     [Theory]
     [InlineData(0)]
     [InlineData(-5)]
-    public void TrangKhongHopLe_BiKepVeMot(int page)
+    public void InvalidPage_ClampsToOne(int page)
     {
         var request = new PageRequest { Page = page };
 
@@ -25,7 +25,7 @@ public class PageRequestTests
     }
 
     [Fact]
-    public void KichThuocTrangVuotTran_BiKepVeMaxPageSize()
+    public void PageSizeAboveCeiling_ClampsToMaxPageSize()
     {
         var request = new PageRequest { PageSize = PageRequest.MaxPageSize + 500 };
 
@@ -35,7 +35,7 @@ public class PageRequestTests
     [Theory]
     [InlineData(0)]
     [InlineData(-1)]
-    public void KichThuocTrangKhongHopLe_QuayVeMacDinh(int pageSize)
+    public void InvalidPageSize_FallsBackToDefault(int pageSize)
     {
         var request = new PageRequest { PageSize = pageSize };
 
@@ -43,7 +43,7 @@ public class PageRequestTests
     }
 
     [Fact]
-    public void Skip_TinhTheoTrangVaKichThuoc()
+    public void Skip_IsDerivedFromPageAndPageSize()
     {
         var request = new PageRequest { Page = 3, PageSize = 20 };
 
@@ -59,7 +59,7 @@ public class PaginationMetaTests
     [InlineData(20, 20, 1)]
     [InlineData(21, 20, 2)]
     [InlineData(100, 30, 4)]
-    public void TotalPages_LamTronLen(long totalItems, int pageSize, int expected)
+    public void TotalPages_RoundsUp(long totalItems, int pageSize, int expected)
     {
         var meta = new PaginationMeta { Page = 1, PageSize = pageSize, TotalItems = totalItems };
 
@@ -67,7 +67,7 @@ public class PaginationMetaTests
     }
 
     [Fact]
-    public void TrangDau_KhongCoTrangTruoc_NhungCoTrangSau()
+    public void FirstPage_HasNextButNoPrevious()
     {
         var meta = new PaginationMeta { Page = 1, PageSize = 10, TotalItems = 25 };
 
@@ -76,7 +76,7 @@ public class PaginationMetaTests
     }
 
     [Fact]
-    public void TrangCuoi_CoTrangTruoc_KhongCoTrangSau()
+    public void LastPage_HasPreviousButNoNext()
     {
         var meta = new PaginationMeta { Page = 3, PageSize = 10, TotalItems = 25 };
 

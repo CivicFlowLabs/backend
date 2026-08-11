@@ -15,7 +15,7 @@ namespace CivicFlow.Tests.Api;
 public class ExceptionHandlingMiddlewareTests
 {
     [Fact]
-    public async Task LoiKiemTraDuLieu_TraVe400KemChiTietTungTruong()
+    public async Task ValidationFailure_Returns400WithPerFieldDetails()
     {
         var failures = new[]
         {
@@ -37,7 +37,7 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task LoiNghiepVuDaLuongTruoc_DungMaTrangThaiCuaChinhNo()
+    public async Task ExpectedDomainError_UsesItsOwnStatusCode()
     {
         var (statusCode, body) = await InvokeAsync(new NotFoundException("Không tìm thấy phản ánh."));
 
@@ -49,7 +49,7 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task ForbiddenException_TraVe403()
+    public async Task ForbiddenException_Returns403()
     {
         var (statusCode, body) = await InvokeAsync(new ForbiddenException("Ngoài địa bàn được phân công."));
 
@@ -58,7 +58,7 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task LoiNgoaiDuKien_KhongLoChiTietNoiBoOMoiTruongThat()
+    public async Task UnexpectedError_HidesInternalDetailsOutsideDevelopment()
     {
         var (statusCode, body) = await InvokeAsync(
             new InvalidOperationException("Chuỗi kết nối chứa mật khẩu bí mật"),
@@ -72,7 +72,7 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task LoiNgoaiDuKien_LoChiTietKhiDangPhatTrien()
+    public async Task UnexpectedError_RevealsDetailsInDevelopment()
     {
         var (_, body) = await InvokeAsync(
             new InvalidOperationException("Chi tiết để gỡ lỗi"),
@@ -84,7 +84,7 @@ public class ExceptionHandlingMiddlewareTests
     }
 
     [Fact]
-    public async Task PhongBiLoi_LuonKemMaTuongQuan()
+    public async Task ErrorEnvelope_AlwaysCarriesCorrelationId()
     {
         var (_, body) = await InvokeAsync(new NotFoundException("Không có."), correlationId: "trace-xyz");
 
