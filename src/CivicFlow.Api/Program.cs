@@ -29,8 +29,6 @@ builder.Services
     .AddControllers(options => options.Filters.Add<ApiResponseWrappingFilter>())
     .ConfigureApiBehaviorOptions(options =>
     {
-        // Mặc định [ApiController] trả về ValidationProblemDetails, khác với
-        // phong bì chung — nên thay bằng định dạng của dự án.
         options.InvalidModelStateResponseFactory = context =>
         {
             var details = context.ModelState
@@ -51,13 +49,6 @@ builder.Services
         };
     });
 
-// --- Xác thực JWT Bearer & Phân quyền -----------------------------------
-// Cố ý KHÔNG có giá trị mặc định. Một khoá dự phòng nằm trong mã nguồn nghĩa
-// là khi quên cấu hình, ứng dụng vẫn chạy bình thường bằng khoá mà ai cũng
-// đọc được trên kho công khai — và ai có khoá thì tự ký được token với bất kỳ
-// vai trò nào. Thà chết lúc khởi động còn hơn chạy với xác thực vô hiệu.
-// Dùng IsNullOrWhiteSpace chứ không dùng ?? : biến môi trường đặt thành chuỗi
-// rỗng vẫn khác null, nên toán tử ?? sẽ để lọt một khoá rỗng.
 var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
 
 if (string.IsNullOrWhiteSpace(jwtSecretKey))
@@ -67,8 +58,7 @@ if (string.IsNullOrWhiteSpace(jwtSecretKey))
         + "sinh khoá mới bằng: openssl rand -base64 48");
 }
 
-// HMAC-SHA256 yêu cầu khoá tối thiểu 256 bit. Kiểm tra ngay lúc khởi động
-// thay vì để lỗi nổ ra khi cấp token đầu tiên.
+
 const int MinimumJwtKeyBytes = 32;
 if (Encoding.UTF8.GetByteCount(jwtSecretKey) < MinimumJwtKeyBytes)
 {
@@ -83,7 +73,6 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    // Chỉ nới lỏng khi phát triển cục bộ; ngoài môi trường đó thì bắt buộc HTTPS.
     options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
@@ -149,14 +138,9 @@ var app = builder.Build();
 // --- Serilog Request Logging -----------------------------------------
 app.UseSerilogRequestLogging();
 
-// --- Đường ống xử lý request -----------------------------------------
-// Mã tương quan phải nằm ngoài cùng để middleware xử lý lỗi đọc được nó.
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-// Các mã lỗi phát sinh trước khi request vào tới MVC — đường dẫn không tồn
-// tại, sai phương thức HTTP — mặc định trả về thân rỗng. Bọc lại để client
-// luôn nhận đúng một định dạng.
 app.UseStatusCodePages(async statusCodeContext =>
 {
     var response = statusCodeContext.HttpContext.Response;
@@ -185,9 +169,4 @@ app.MapControllers();
 
 app.Run();
 
-/// <summary>
-/// Lộ lớp Program ra ngoài để WebApplicationFactory trong project test dựng
-/// được máy chủ in-memory. Với top-level statements thì lớp này mặc định là
-/// internal nên phải khai báo tường minh.
-/// </summary>
 public partial class Program;
