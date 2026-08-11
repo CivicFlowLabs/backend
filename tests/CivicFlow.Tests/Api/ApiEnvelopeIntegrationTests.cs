@@ -96,5 +96,12 @@ public sealed class CivicFlowApiFactory : WebApplicationFactory<Program>
         builder.UseSetting(
             "ConnectionStrings:Default",
             "Host=localhost;Port=5432;Database=civicflow_test;Username=test;Password=test");
+
+        // Ứng dụng cố ý không có khoá JWT mặc định nên sẽ không khởi động
+        // nếu thiếu. Đây là khoá dùng một lần cho test, đủ 32 byte theo yêu
+        // cầu của HMAC-SHA256, và không được dùng ở bất kỳ môi trường nào.
+        builder.UseSetting(
+            "Jwt:SecretKey",
+            "test-only-signing-key-do-not-use-anywhere-else");
     }
 }

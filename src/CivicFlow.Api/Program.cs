@@ -52,8 +52,29 @@ builder.Services
     });
 
 // --- Xác thực JWT Bearer & Phân quyền -----------------------------------
-var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] 
-    ?? "CivicFlowSecretKeyForJwtTokenGeneration2026100%SafeMustBeLongEnough!";
+// Cố ý KHÔNG có giá trị mặc định. Một khoá dự phòng nằm trong mã nguồn nghĩa
+// là khi quên cấu hình, ứng dụng vẫn chạy bình thường bằng khoá mà ai cũng
+// đọc được trên kho công khai — và ai có khoá thì tự ký được token với bất kỳ
+// vai trò nào. Thà chết lúc khởi động còn hơn chạy với xác thực vô hiệu.
+// Dùng IsNullOrWhiteSpace chứ không dùng ?? : biến môi trường đặt thành chuỗi
+// rỗng vẫn khác null, nên toán tử ?? sẽ để lọt một khoá rỗng.
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"];
+
+if (string.IsNullOrWhiteSpace(jwtSecretKey))
+{
+    throw new InvalidOperationException(
+        "Thiếu cấu hình Jwt:SecretKey. Đặt Jwt__SecretKey trong file .env, "
+        + "sinh khoá mới bằng: openssl rand -base64 48");
+}
+
+// HMAC-SHA256 yêu cầu khoá tối thiểu 256 bit. Kiểm tra ngay lúc khởi động
+// thay vì để lỗi nổ ra khi cấp token đầu tiên.
+const int MinimumJwtKeyBytes = 32;
+if (Encoding.UTF8.GetByteCount(jwtSecretKey) < MinimumJwtKeyBytes)
+{
+    throw new InvalidOperationException(
+        $"Jwt:SecretKey phải dài ít nhất {MinimumJwtKeyBytes} byte để dùng với HMAC-SHA256.");
+}
 
 builder.Services.AddAuthentication(options =>
 {
@@ -62,7 +83,8 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.RequireHttpsMetadata = false;
+    // Chỉ nới lỏng khi phát triển cục bộ; ngoài môi trường đó thì bắt buộc HTTPS.
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
     options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
