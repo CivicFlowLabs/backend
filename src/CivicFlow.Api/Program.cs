@@ -1,11 +1,22 @@
+using System.Text;
 using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
 using CivicFlow.Modules.Identity;
 using CivicFlow.Shared.Api;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// --- Serilog (Structured Logging) -------------------------------------
+builder.Host.UseSerilog((context, services, configuration) => configuration
+    .ReadFrom.Configuration(context.Configuration)
+    .ReadFrom.Services(services)
+    .Enrich.FromLogContext());
 
 // --- Module nghiệp vụ -------------------------------------------------
 // Mỗi module tự đăng ký DbContext và dịch vụ của mình.
@@ -40,6 +51,34 @@ builder.Services
         };
     });
 
+// --- Xác thực JWT Bearer & Phân quyền -----------------------------------
+var jwtSecretKey = builder.Configuration["Jwt:SecretKey"] 
+    ?? "CivicFlowSecretKeyForJwtTokenGeneration2026100%SafeMustBeLongEnough!";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+        ValidateIssuer = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"] ?? "CivicFlow",
+        ValidateAudience = true,
+        ValidAudience = builder.Configuration["Jwt:Audience"] ?? "CivicFlowClients",
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization();
+
 // --- CORS -------------------------------------------------------------
 // Đọc origin từ cấu hình để phục vụ ứng dụng di động và ứng dụng máy tính.
 var allowedOrigins = builder.Configuration
@@ -54,11 +93,39 @@ builder.Services.AddCors(options =>
         .WithExposedHeaders(HttpConstants.CorrelationIdHeader));
 });
 
-// --- Tài liệu API -----------------------------------------------------
+// --- Tài liệu API & Swagger -------------------------------------------
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "CivicFlow API",
+        Version = "v1",
+        Description = "Nền tảng dịch vụ hành chính công cấp xã/phường."
+    });
+
+    var securityScheme = new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Nhập 'Bearer' [khoảng trắng] và nhập JWT token vào ô bên dưới.\r\n\r\nVí dụ: \"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6...\""
+    };
+
+    options.AddSecurityDefinition("Bearer", securityScheme);
+
+    options.AddSecurityRequirement((document) => new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecuritySchemeReference("Bearer"), new List<string>() }
+    });
+});
 
 var app = builder.Build();
+
+// --- Serilog Request Logging -----------------------------------------
+app.UseSerilogRequestLogging();
 
 // --- Đường ống xử lý request -----------------------------------------
 // Mã tương quan phải nằm ngoài cùng để middleware xử lý lỗi đọc được nó.
@@ -88,6 +155,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
