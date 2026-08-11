@@ -13,7 +13,7 @@ public class ApiResponseWrappingFilterTests
     private sealed record SampleDto(string Name);
 
     [Fact]
-    public async Task GiaTriThuong_DuocDuaVaoData()
+    public async Task PlainValue_GoesIntoData()
     {
         var result = await RunFilterAsync(new OkObjectResult(new SampleDto("Phường Bến Nghé")));
 
@@ -24,7 +24,7 @@ public class ApiResponseWrappingFilterTests
     }
 
     [Fact]
-    public async Task PagedResult_TachThanhDataVaPagination()
+    public async Task PagedResult_SplitsIntoDataAndPagination()
     {
         var paged = new PagedResult<SampleDto>
         {
@@ -44,9 +44,9 @@ public class ApiResponseWrappingFilterTests
     }
 
     [Fact]
-    public async Task GiaTriDaLaPhongBi_KhongBocHaiLan()
+    public async Task AlreadyWrappedValue_IsNotWrappedTwice()
     {
-        var already = ApiResponse.Success(new SampleDto("Đã bọc sẵn"));
+        var already = ApiResponse.Success(new SampleDto("already wrapped"));
 
         var result = await RunFilterAsync(new OkObjectResult(already));
 
@@ -54,7 +54,7 @@ public class ApiResponseWrappingFilterTests
     }
 
     [Fact]
-    public async Task KetQuaKhongCoThanVoiMaLoi_DuocDoiThanhPhongBiLoi()
+    public async Task BodilessErrorResult_BecomesErrorEnvelope()
     {
         var result = await RunFilterAsync(new NotFoundResult(), correlationId: "trace-1");
 
@@ -69,7 +69,7 @@ public class ApiResponseWrappingFilterTests
     }
 
     [Fact]
-    public async Task ProblemDetails_DuocDoiSangPhongBiLoi()
+    public async Task ProblemDetails_BecomesErrorEnvelope()
     {
         var problem = new ProblemDetails { Detail = "Mã đơn vị đã tồn tại." };
         var result = await RunFilterAsync(new ObjectResult(problem) { StatusCode = StatusCodes.Status409Conflict });
@@ -81,7 +81,7 @@ public class ApiResponseWrappingFilterTests
     }
 
     [Fact]
-    public async Task PhanHoi204_GiuNguyen_ViChuanHttpKhongChoPhepCoThan()
+    public async Task NoContentResponse_IsLeftUntouched()
     {
         var noContent = new NoContentResult();
 
