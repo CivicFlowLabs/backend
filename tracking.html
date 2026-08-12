@@ -489,13 +489,17 @@
           <td class="mono">Identity/Entities/AppUser.cs · AppUserConfiguration.cs</td>
         </tr>
         <tr>
-          <td><span class="tag t-crit">Nghiêm trọng</span></td>
+          <td><span class="tag t-info">Đã xử lý</span></td>
           <td>
-            <strong>Bí mật bị đưa trở lại mã nguồn.</strong> Commit <code>8ea9871</code> (đã merge vào <code>origin/dev</code> qua PR #6) thêm mật khẩu CSDL và
-            <strong>khoá ký JWT</strong> vào <code>appsettings.json</code> — file này được Git theo dõi và kho mã là kho công khai.
-            Việc này đảo ngược hai commit bảo mật <code>41e45d0</code> và <code>dac6a9e</code>.
-            Khoá JWT nguy hiểm hơn hẳn mật khẩu CSDL: chuỗi kết nối trỏ <code>localhost</code> nên vô hại với người ngoài, còn khoá JWT khai thác được từ xa để giả mạo mọi vai trò.
-            <strong>Cần làm:</strong> sinh khoá JWT mới và coi khoá hiện tại là đã cháy, gỡ hai giá trị khỏi <code>appsettings.json</code>, trả về đọc từ <code>.env</code>.
+            <s>Bí mật bị đưa trở lại mã nguồn: commit <code>8ea9871</code> (merge vào <code>origin/dev</code> qua PR #6) thêm mật khẩu CSDL và khoá ký JWT vào <code>appsettings.json</code>, đảo ngược hai commit bảo mật <code>41e45d0</code> và <code>dac6a9e</code></s><br>
+            Đã gỡ cả hai khỏi <code>appsettings.json</code>, trả về đọc từ <code>.env</code> — khớp với <code>appsettings.Development.json</code> vốn đã sạch. Khoá JWT bị lộ coi như đã cháy, đã sinh khoá mới cục bộ.
+            Xác minh: thiếu <code>Jwt__SecretKey</code> thì API dừng hẳn kèm thông báo rõ, không có giá trị dự phòng.
+            <br><br>
+            <strong>Không xoá lịch sử Git</strong> — theo đúng tiền lệ nhóm đã chọn hồi 11/08. Khoá cũ đã bị vô hiệu nên thứ còn lại trong lịch sử không dùng được nữa;
+            đổi lấy việc force-push làm hỏng bản sao của cả nhóm là không đáng.
+            Mật khẩu <code>civicflow</code> trong chuỗi bị lộ <strong>không trùng</strong> mật khẩu thật đang dùng, và chuỗi đó trỏ <code>localhost</code>.
+            <br><br>
+            <strong>Còn nợ:</strong> cần báo người viết commit để không lặp lại — <code>appsettings.json</code> là đường dễ nhất để chạy được mà không cần <code>.env</code>, nhất là từ khi API tự migrate và seed lúc khởi động.
           </td>
           <td class="mono">Api/appsettings.json</td>
         </tr>
