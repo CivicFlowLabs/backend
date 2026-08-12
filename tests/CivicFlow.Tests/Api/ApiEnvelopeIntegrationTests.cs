@@ -91,6 +91,7 @@ public sealed class CivicFlowApiFactory : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
     {
+        builder.UseSetting("Environment", "Testing");
         builder.UseSetting(
             "ConnectionStrings:Default",
             "Host=localhost;Port=5432;Database=civicflow_test;Username=civicflow;Password=civicflow");
