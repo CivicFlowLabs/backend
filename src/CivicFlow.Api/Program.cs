@@ -3,10 +3,13 @@ using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
 using CivicFlow.Modules.AdministrativeUnits;
+using CivicFlow.Modules.AdministrativeUnits.Persistence;
 using CivicFlow.Modules.Identity;
+using CivicFlow.Modules.Identity.Persistence;
 using CivicFlow.Shared.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
@@ -146,6 +149,34 @@ var app = builder.Build();
 // --- Serilog Request Logging -----------------------------------------
 app.UseSerilogRequestLogging();
 
+// --- Tự động áp dụng Migration & Seed Data khi ứng dụng khởi chạy ----
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+
+        // Mỗi module có bộ migration riêng nên phải áp lần lượt từng context.
+        var admDbContext = scope.ServiceProvider.GetRequiredService<AdmDbContext>();
+        await admDbContext.Database.MigrateAsync();
+
+        var identityDbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        await identityDbContext.Database.MigrateAsync();
+
+        // Đơn vị hành chính phải có trước, vì tài khoản mẫu tham chiếu tới nó
+        // bằng ID logic. Api là nơi duy nhất nhìn thấy cả hai module, nên chỗ
+        // ghép hai bên nằm ở đây chứ không nằm trong module nào.
+        var defaultUnitId = await AdmDataSeeder.SeedAsync(admDbContext);
+        await IdentityDataSeeder.SeedAsync(identityDbContext, defaultUnitId);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Không thể tự động áp dụng Migration hoặc Seed Data khi khởi chạy.");
+    }
+}
+
+// --- Đường ống xử lý request -----------------------------------------
+// Mã tương quan phải nằm ngoài cùng để middleware xử lý lỗi đọc được nó.
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
