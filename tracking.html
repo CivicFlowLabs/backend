@@ -133,7 +133,7 @@
 
   <header>
     <h1>Civic Flow — Backend</h1>
-    <div class="sub">Bảng theo dõi tiến độ dự án · Cập nhật lần cuối: <strong>10/08/2026</strong></div>
+    <div class="sub">Bảng theo dõi tiến độ dự án · Cập nhật lần cuối: <strong>11/08/2026</strong></div>
   </header>
 
   <!-- ===================== TỔNG QUAN ===================== -->
@@ -153,7 +153,7 @@
     </div>
     <div class="card">
       <div class="label">Nhánh</div>
-      <div class="value mono" style="font-size:13px">main · dev<br><small>feature/api-response-envelope</small></div>
+      <div class="value mono" style="font-size:13px">main · dev<br><small>fix/remove-hardcoded-secrets</small></div>
     </div>
     <div class="card">
       <div class="label">Commit hiện tại</div>
@@ -185,13 +185,13 @@
     </div>
     <div class="bar-row">
       <div class="name">Xác thực &amp; phân quyền</div>
-      <div class="bar"><span style="width:0%"></span></div>
-      <div class="pct">0%</div>
+      <div class="bar"><span style="width:35%"></span></div>
+      <div class="pct">35%</div>
     </div>
     <div class="bar-row">
       <div class="name">Kiểm thử</div>
-      <div class="bar"><span style="width:35%"></span></div>
-      <div class="pct">35%</div>
+      <div class="bar"><span style="width:40%"></span></div>
+      <div class="pct">40%</div>
     </div>
   </div>
   <div class="note">
@@ -212,7 +212,7 @@
     </div>
     <div class="card">
       <div class="label">Task đang làm</div>
-      <div class="value">Không có <small>· nền tảng API đã xong, chờ giao task kế tiếp (dự kiến: xác thực JWT)</small></div>
+      <div class="value">Gỡ bí mật khỏi mã nguồn <small>· nhánh fix/remove-hardcoded-secrets, chờ merge</small></div>
     </div>
   </div>
 
@@ -324,6 +324,34 @@
             <span class="tag t-ok" style="margin-top:4px">✅ Gọi thật: 200, 404, 405, mã tương quan</span>
           </td>
         </tr>
+        <tr>
+          <td><strong>SEC</strong></td>
+          <td>Bảo mật</td>
+          <td>
+            Gỡ thông tin đăng nhập CSDL khỏi mã nguồn
+            <br><small style="color:var(--muted)">Tiêu chí: không file nào được commit chứa mật khẩu; thiếu cấu hình thì báo lỗi rõ ràng thay vì chạy bằng giá trị mặc định</small>
+          </td>
+          <td class="mono">11/08/2026</td>
+          <td>
+            <ul>
+              <li><code>.env.example</code> (mới) · <code>.env</code> (không commit)</li>
+              <li><code>docker-compose.yml</code></li>
+              <li><code>IdentityDbContextFactory.cs</code></li>
+              <li><code>appsettings.Development.json</code></li>
+              <li><code>tests/.../ApiEnvelopeIntegrationTests.cs</code></li>
+              <li><code>README.md</code></li>
+            </ul>
+          </td>
+          <td>
+            <small style="color:var(--muted)">fix(security): move database credentials out of source control</small>
+          </td>
+          <td>
+            <span class="tag t-ok">✅ Mật khẩu cũ bị từ chối khi kết nối thật</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Thiếu biến môi trường → báo lỗi rõ ràng</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Dựng lại DB, áp migration, health 200</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ 31/31 test pass · git grep sạch</span>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -405,9 +433,13 @@
           <td class="mono">Api/Program.cs</td>
         </tr>
         <tr>
-          <td><span class="tag t-crit">Nghiêm trọng</span></td>
-          <td>Mật khẩu CSDL để trực tiếp trong mã nguồn (3 nơi) — trái CLAUDE.md §14. Hiện là mật khẩu dev nhưng cần chuyển sang user-secrets / biến môi trường</td>
-          <td class="mono">appsettings.Development.json · IdentityDbContextFactory.cs · docker-compose.yml</td>
+          <td><span class="tag t-info">Đã xử lý</span></td>
+          <td>
+            <s>Mật khẩu CSDL để trực tiếp trong mã nguồn (4 nơi) — trái CLAUDE.md §14</s><br>
+            Đã chuyển toàn bộ sang <code>.env</code> (bị gitignore chặn) và đổi mật khẩu dev mới, nên mật khẩu cũ còn trong lịch sử Git đã vô hiệu.
+            <strong>Không xoá lịch sử Git</strong> — thứ bị lộ chỉ là mật khẩu dev trỏ tới localhost, không đáng đánh đổi việc force-push làm hỏng clone của cả nhóm.
+          </td>
+          <td class="mono">.env · .env.example</td>
         </tr>
         <tr>
           <td><span class="tag t-crit">Nghiêm trọng</span></td>
@@ -415,9 +447,26 @@
           <td class="mono">RefreshTokenConfiguration.cs</td>
         </tr>
         <tr>
-          <td><span class="tag t-crit">Nghiêm trọng</span></td>
-          <td>Khối cấu hình <code>Jwt</code> có Issuer/Audience/thời hạn nhưng thiếu khoá ký, và chưa có class nào đọc nó</td>
-          <td class="mono">appsettings.Development.json</td>
+          <td><span class="tag t-warn">Trung bình</span></td>
+          <td>JWT mới có phần kiểm tra token, <strong>chưa có phần cấp token</strong>: không có AuthController, TokenService hay endpoint đăng nhập, và chưa endpoint nào gắn <code>[Authorize]</code></td>
+          <td class="mono">Api/Controllers</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-info">Đã xử lý</span></td>
+          <td>
+            <s>Khoá ký JWT nằm trong mã nguồn ở 2 nơi: giá trị dự phòng sau toán tử <code>??</code> trong <code>Program.cs</code> và giá trị thật trong <code>appsettings.Development.json</code></s><br>
+            Đã chuyển sang <code>Jwt__SecretKey</code> trong <code>.env</code> và đổi sang cơ chế dừng-ngay: thiếu khoá hoặc khoá ngắn hơn 32 byte thì API không khởi động.
+            Khoá cũ coi như đã cháy, không dùng lại ở bất kỳ môi trường nào.
+            <strong>Nguy hiểm hơn hẳn mật khẩu CSDL</strong> — chuỗi kết nối trỏ <code>localhost</code> nên vô hại với người ngoài, còn khoá JWT thì khai thác được từ xa để giả mạo mọi vai trò.
+          </td>
+          <td class="mono">Program.cs · .env</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-info">Đã xử lý</span></td>
+          <td>
+            <s><code>RequireHttpsMetadata = false</code> đặt vô điều kiện</s> — đã đổi thành <code>!builder.Environment.IsDevelopment()</code> để chỉ nới lỏng khi phát triển cục bộ
+          </td>
+          <td class="mono">Api/Program.cs</td>
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>

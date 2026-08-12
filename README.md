@@ -52,17 +52,35 @@ dotnet tool install --global dotnet-ef
 
 ## Chạy dự án
 
-### 1. Khởi động hạ tầng
+### 1. Tạo file cấu hình cục bộ
+
+```bash
+cp .env.example .env
+```
+
+Mở `.env` và đặt mật khẩu của riêng bạn — sinh nhanh bằng `openssl rand -base64 24`. Nhớ để `POSTGRES_PASSWORD` khớp với phần `Password=` trong chuỗi kết nối.
+
+`.env` đã được `.gitignore` chặn nên không bao giờ bị commit. **Không đặt mật khẩu thật vào `.env.example`.**
+
+### 2. Nạp biến môi trường vào shell
+
+```bash
+set -a && source .env && set +a
+```
+
+Chạy lệnh này trong mỗi phiên terminal mới, trước khi gọi `dotnet ef` hay `dotnet run`. Docker Compose tự đọc `.env` nên không cần bước này.
+
+### 3. Khởi động hạ tầng
 
 ```bash
 docker compose up -d
 ```
 
-Lệnh này dựng PostgreSQL 17 (đã kèm PostGIS và pgvector) cùng Redis. Thông số cổng, tên CSDL và tài khoản dev nằm trong `docker-compose.yml`.
+Lệnh này dựng PostgreSQL 17 (đã kèm PostGIS và pgvector) cùng Redis. Nếu thiếu `POSTGRES_PASSWORD`, Compose sẽ dừng ngay kèm thông báo thay vì lặng lẽ dựng CSDL bằng mật khẩu mặc định.
 
-Nếu máy đang chạy PostgreSQL khác ở cổng 5432, đổi ánh xạ cổng trong `docker-compose.yml` thành `"5433:5432"` rồi cập nhật lại chuỗi kết nối.
+Nếu máy đang chạy PostgreSQL khác ở cổng 5432, đổi ánh xạ cổng trong `docker-compose.yml` thành `"5433:5432"` rồi sửa lại cổng trong chuỗi kết nối ở `.env`.
 
-### 2. Áp dụng migration
+### 4. Áp dụng migration
 
 Mỗi module có migration riêng, nên phải chỉ rõ project chứa migration và project khởi động:
 
@@ -76,7 +94,7 @@ Xem danh sách migration của một module:
 dotnet ef migrations list --project src/Modules/CivicFlow.Modules.Identity --startup-project src/CivicFlow.Api
 ```
 
-### 3. Chạy API
+### 5. Chạy API
 
 ```bash
 dotnet run --project src/CivicFlow.Api
@@ -88,24 +106,35 @@ dotnet run --project src/CivicFlow.Api
 | `http://localhost:5141/swagger` | Swagger UI (chỉ ở môi trường Development) |
 | `http://localhost:5141/api/v1/health/db` | Kiểm tra kết nối CSDL và phiên bản PostGIS |
 
-### 4. Chạy kiểm thử
+### 6. Chạy kiểm thử
 
 ```bash
 dotnet test
 ```
 
+Bộ test không cần cơ sở dữ liệu nên chạy được mà không phải nạp `.env`.
+
 ## Cấu hình
 
-Chuỗi kết nối đọc từ `ConnectionStrings:Default`.
+Toàn bộ thông tin nhạy cảm nằm trong `.env`, không nằm trong mã nguồn.
 
-Riêng khi chạy lệnh `dotnet ef`, design-time factory ưu tiên biến môi trường `CIVICFLOW_CONNECTION`:
+| Biến | Dùng ở đâu |
+| --- | --- |
+| `POSTGRES_PASSWORD` | `docker-compose.yml` khi dựng PostgreSQL |
+| `ConnectionStrings__Default` | API và lệnh `dotnet ef` |
+| `Jwt__SecretKey` | Khoá ký JWT, tối thiểu 32 byte |
 
-```bash
-export CIVICFLOW_CONNECTION="Host=localhost;Port=5432;Database=civicflow_dev;Username=civicflow;Password=..."
-```
+Dấu gạch dưới đôi là quy ước của .NET: `ConnectionStrings__Default` được ánh xạ sang khoá cấu hình `ConnectionStrings:Default`, nhờ đó API và EF Core tooling dùng chung đúng một biến.
 
-> **Không commit mật khẩu thật, khoá JWT hay thông tin đăng nhập dịch vụ ngoài.**
-> Với môi trường phát triển hãy dùng `dotnet user-secrets`; với môi trường triển khai hãy dùng biến môi trường hoặc trình quản lý bí mật.
+Design-time factory **không có chuỗi kết nối mặc định**. Thiếu biến môi trường thì `dotnet ef` báo lỗi kèm hướng dẫn, thay vì âm thầm chạy bằng thông tin đăng nhập nhúng sẵn trong mã nguồn.
+
+Tương tự, **khoá JWT không có giá trị mặc định**. Thiếu `Jwt__SecretKey` thì API dừng ngay lúc khởi động. Đây là chủ ý: một khoá dự phòng trong mã nguồn nghĩa là khi quên cấu hình lúc triển khai, hệ thống vẫn chạy bình thường bằng khoá mà ai đọc kho mã cũng thấy — và ai có khoá thì tự ký được token với bất kỳ vai trò nào.
+
+Ngược lại, `Jwt:Issuer` và `Jwt:Audience` **có** giá trị mặc định trong mã nguồn. Chúng là định danh công khai, không phải bí mật.
+
+> **Không commit mật khẩu, khoá JWT hay thông tin đăng nhập dịch vụ ngoài.**
+> Mã nguồn nằm trong kho công khai — mọi thứ đã commit đều tồn tại vĩnh viễn trong lịch sử Git, kể cả khi xoá đi ở commit sau.
+> Môi trường triển khai dùng biến môi trường hoặc trình quản lý bí mật, không dùng file `.env`.
 
 ## Cấu trúc dự án
 
