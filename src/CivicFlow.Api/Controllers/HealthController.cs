@@ -1,4 +1,5 @@
 using CivicFlow.Api.Contracts;
+using CivicFlow.Modules.AdministrativeUnits.Repositories;
 using CivicFlow.Modules.Identity.Persistence;
 using CivicFlow.Shared.Api;
 using Microsoft.AspNetCore.Mvc;
@@ -15,10 +16,12 @@ namespace CivicFlow.Api.Controllers;
 public sealed class HealthController : ControllerBase
 {
     private readonly IdentityDbContext _db;
+    private readonly IAdministrativeUnitRepository _units;
 
-    public HealthController(IdentityDbContext db)
+    public HealthController(IdentityDbContext db, IAdministrativeUnitRepository units)
     {
         _db = db;
+        _units = units;
     }
 
     /// <summary>Kiểm tra kết nối cơ sở dữ liệu và phiên bản PostGIS.</summary>
@@ -36,7 +39,9 @@ public sealed class HealthController : ControllerBase
             .SqlQuery<string>($"SELECT PostGIS_Version() AS \"Value\"")
             .FirstOrDefaultAsync(cancellationToken);
 
-        var unitCount = await _db.AdministrativeUnits.CountAsync(cancellationToken);
+        // Đơn vị hành chính do module riêng sở hữu, nên đếm qua hợp đồng công
+        // khai của module đó thay vì truy cập thẳng DbContext của nó.
+        var unitCount = await _units.CountCurrentAsync(cancellationToken);
 
         return Ok(new DatabaseHealthResponse("ok", postgisVersion, unitCount));
     }

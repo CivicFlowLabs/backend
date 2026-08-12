@@ -161,7 +161,7 @@
     </div>
     <div class="card">
       <div class="label">Module</div>
-      <div class="value">1 / 5 đã khởi tạo<br><small>Identity · (Reports, WorkOrders, Knowledge, Engagement còn rỗng)</small></div>
+      <div class="value">2 / 6 đã khởi tạo<br><small>Identity, AdministrativeUnits · (Reports, WorkOrders, Knowledge, Engagement còn rỗng)</small></div>
     </div>
   </div>
 
@@ -212,7 +212,7 @@
     </div>
     <div class="card">
       <div class="label">Task đang làm</div>
-      <div class="value">Gỡ bí mật khỏi mã nguồn <small>· nhánh fix/remove-hardcoded-secrets, chờ merge</small></div>
+      <div class="value">Module ĐVHC — Task 1 xong <small>· nhánh dev, sẵn sàng sang Task 2 (crawler + ingestion)</small></div>
     </div>
   </div>
 
@@ -352,6 +352,37 @@
             <span class="tag t-ok" style="margin-top:4px">✅ 31/31 test pass · git grep sạch</span>
           </td>
         </tr>
+        <tr>
+          <td><strong>BE-04</strong></td>
+          <td>Đơn vị hành chính</td>
+          <td>
+            Schema <code>adm</code> + tầng EF Core cho module Đơn vị hành chính
+            <br><small style="color:var(--muted)">Theo §5 và §6 tài liệu thiết kế ĐVHC. Bảng có phiên bản theo thời gian, ràng buộc EXCLUDE chặn chồng lấn, index không gian GiST và tìm kiếm mờ GIN</small>
+          </td>
+          <td class="mono">12/08/2026</td>
+          <td>
+            <ul>
+              <li><code>Modules/CivicFlow.Modules.AdministrativeUnits/</code> (module mới)</li>
+              <li><code>Entities/</code>: AdministrativeUnit, AdministrativeBoundary, UnitMapping, DatasetVersion, AdmLevel</li>
+              <li><code>Persistence/</code>: AdmDbContext, AdmDbContextFactory, 4 IEntityTypeConfiguration</li>
+              <li><code>Repositories/</code>: IAdministrativeUnitRepository + bản cài đặt</li>
+              <li><code>Persistence/Migrations/20260812100040_InitAdm.cs</code></li>
+              <li><code>CivicFlow.Shared/Common/DbSchemas.cs</code> · <code>CivicFlow.Api/Program.cs</code></li>
+            </ul>
+          </td>
+          <td>
+            <small style="color:var(--muted)">feat(adm): administrative unit schema and EF Core layer</small>
+          </td>
+          <td>
+            <span class="tag t-ok">✅ 4 bảng + 16 index tồn tại trong schema adm</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ EXCLUDE chặn chồng lấn, cho phép khoảng liền kề</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ valid_from/valid_to kiểu date · audit dùng timestamptz</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Build 0 warning · 33/33 test pass</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Đã gỡ trùng với identity.administrative_unit</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ GET /health/db trả 200, đếm đơn vị qua schema adm</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Seeder chuyển sang nạp vào adm, chạy lại không nhân đôi</span>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -445,6 +476,41 @@
           <td><span class="tag t-crit">Nghiêm trọng</span></td>
           <td>Refresh token lưu dạng thô, chưa băm — ai đọc được DB là chiếm được mọi phiên đăng nhập</td>
           <td class="mono">RefreshTokenConfiguration.cs</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-info">Đã xử lý</span></td>
+          <td>
+            <s>Hai bảng đơn vị hành chính cùng tồn tại: <code>identity.administrative_unit</code> và <code>adm.administrative_unit</code></s><br>
+            Đã bỏ bảng trong schema <code>identity</code>; schema <code>adm</code> là nguồn chân lý duy nhất.
+            <code>AppUser.AdministrativeUnitId</code> giữ nguyên cột nhưng chuyển thành <strong>ID logic</strong>, không còn khoá ngoại vật lý — đúng quy ước cấm khoá ngoại xuyên schema.
+            Bảng cũ chưa từng được tạo trong CSDL nào nên không có dữ liệu bị mất.
+            <strong>Còn nợ:</strong> chưa có kiểm tra ở tầng ứng dụng cho tính hợp lệ của <code>administrative_unit_id</code> — làm cùng lúc với luồng tạo người dùng.
+          </td>
+          <td class="mono">Identity/Entities/AppUser.cs · AppUserConfiguration.cs</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-info">Đã xử lý</span></td>
+          <td>
+            <s>Bí mật bị đưa trở lại mã nguồn: commit <code>8ea9871</code> (merge vào <code>origin/dev</code> qua PR #6) thêm mật khẩu CSDL và khoá ký JWT vào <code>appsettings.json</code>, đảo ngược hai commit bảo mật <code>41e45d0</code> và <code>dac6a9e</code></s><br>
+            Đã gỡ cả hai khỏi <code>appsettings.json</code>, trả về đọc từ <code>.env</code> — khớp với <code>appsettings.Development.json</code> vốn đã sạch. Khoá JWT bị lộ coi như đã cháy, đã sinh khoá mới cục bộ.
+            Xác minh: thiếu <code>Jwt__SecretKey</code> thì API dừng hẳn kèm thông báo rõ, không có giá trị dự phòng.
+            <br><br>
+            <strong>Không xoá lịch sử Git</strong> — theo đúng tiền lệ nhóm đã chọn hồi 11/08. Khoá cũ đã bị vô hiệu nên thứ còn lại trong lịch sử không dùng được nữa;
+            đổi lấy việc force-push làm hỏng bản sao của cả nhóm là không đáng.
+            Mật khẩu <code>civicflow</code> trong chuỗi bị lộ <strong>không trùng</strong> mật khẩu thật đang dùng, và chuỗi đó trỏ <code>localhost</code>.
+            <br><br>
+            <strong>Còn nợ:</strong> cần báo người viết commit để không lặp lại — <code>appsettings.json</code> là đường dễ nhất để chạy được mà không cần <code>.env</code>, nhất là từ khi API tự migrate và seed lúc khởi động.
+          </td>
+          <td class="mono">Api/appsettings.json</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-warn">Trung bình</span></td>
+          <td>
+            Extension <code>postgis</code> không phải trusted extension nên migration không tự tạo được — lần dựng máy đầu tiên phải chạy
+            <code>CREATE EXTENSION</code> bằng quyền superuser một lần. Sau đó <code>CREATE EXTENSION IF NOT EXISTS</code> trong migration là no-op.
+            Ba extension còn lại (<code>pg_trgm</code>, <code>unaccent</code>, <code>btree_gist</code>) là trusted, không vướng.
+          </td>
+          <td class="mono">InitAdm migration · README</td>
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>

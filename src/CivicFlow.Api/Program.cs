@@ -2,6 +2,8 @@ using System.Text;
 using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
+using CivicFlow.Modules.AdministrativeUnits;
+using CivicFlow.Modules.AdministrativeUnits.Persistence;
 using CivicFlow.Modules.Identity;
 using CivicFlow.Modules.Identity.Persistence;
 using CivicFlow.Shared.Api;
@@ -23,6 +25,13 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // --- Module nghiệp vụ -------------------------------------------------
 // Mỗi module tự đăng ký DbContext và dịch vụ của mình.
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddAdministrativeUnitsModule(builder.Configuration);
+
+// Cho phép trả hình học PostGIS ra ngoài dưới dạng GeoJSON chuẩn thay vì
+// biểu diễn nội bộ của NetTopologySuite.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(
+        new NetTopologySuite.IO.Converters.GeoJsonConverterFactory()));
 
 // --- MVC --------------------------------------------------------------
 // Bộ lọc bọc phong bì được đăng ký toàn cục nên mọi endpoint đều trả về
@@ -146,9 +155,19 @@ if (!app.Environment.IsEnvironment("Testing"))
     try
     {
         using var scope = app.Services.CreateScope();
+
+        // Mỗi module có bộ migration riêng nên phải áp lần lượt từng context.
+        var admDbContext = scope.ServiceProvider.GetRequiredService<AdmDbContext>();
+        await admDbContext.Database.MigrateAsync();
+
         var identityDbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         await identityDbContext.Database.MigrateAsync();
-        await IdentityDataSeeder.SeedAsync(identityDbContext);
+
+        // Đơn vị hành chính phải có trước, vì tài khoản mẫu tham chiếu tới nó
+        // bằng ID logic. Api là nơi duy nhất nhìn thấy cả hai module, nên chỗ
+        // ghép hai bên nằm ở đây chứ không nằm trong module nào.
+        var defaultUnitId = await AdmDataSeeder.SeedAsync(admDbContext);
+        await IdentityDataSeeder.SeedAsync(identityDbContext, defaultUnitId);
     }
     catch (Exception ex)
     {
