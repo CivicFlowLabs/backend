@@ -20,10 +20,16 @@ public class AppUser : BaseEntity
 
     public UserRole Role { get; set; }
 
-    /// <summary>Địa bàn của người dùng — cơ sở để lọc dữ liệu ở tầng truy vấn.</summary>
+    /// <summary>
+    /// Địa bàn của người dùng — cơ sở để lọc dữ liệu ở tầng truy vấn.
+    /// </summary>
+    /// <remarks>
+    /// Đây là ID logic trỏ tới <c>adm.administrative_unit.id</c>, không có
+    /// khoá ngoại vật lý vì tham chiếu đi xuyên schema. Muốn lấy tên hay
+    /// ranh giới của đơn vị thì gọi qua hợp đồng công khai của module Đơn vị
+    /// hành chính, đừng join thẳng sang schema <c>adm</c>.
+    /// </remarks>
     public Guid AdministrativeUnitId { get; set; }
-
-    public AdministrativeUnit? AdministrativeUnit { get; set; }
 
     public bool IsActive { get; set; } = true;
 

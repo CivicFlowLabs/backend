@@ -15,7 +15,6 @@ public class IdentityDbContext : DbContext
     {
     }
 
-    public DbSet<AdministrativeUnit> AdministrativeUnits => Set<AdministrativeUnit>();
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
@@ -23,8 +22,12 @@ public class IdentityDbContext : DbContext
     {
         modelBuilder.HasDefaultSchema(DbSchemas.Identity);
 
-        // PostGIS cần cho cột boundary. Khai báo ở đây để migration tự sinh
-        // lệnh CREATE EXTENSION.
+        // Module này không còn cột không gian nào, nhưng vẫn phải giữ khai
+        // báo. Extension thuộc phạm vi cả cơ sở dữ liệu chứ không riêng
+        // schema: bỏ dòng này đi thì migration kế tiếp của Identity sẽ sinh
+        // lệnh DROP EXTENSION, kéo theo mọi cột geometry của schema adm.
+        // Khai báo trùng ở nhiều module là vô hại vì lệnh sinh ra có dạng
+        // CREATE EXTENSION IF NOT EXISTS.
         modelBuilder.HasPostgresExtension("postgis");
 
         // Nạp toàn bộ IEntityTypeConfiguration trong assembly của module này.

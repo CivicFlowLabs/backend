@@ -63,11 +63,9 @@ public class AppUserConfiguration : IEntityTypeConfiguration<AppUser>
             .HasColumnName("created_at")
             .HasDefaultValueSql("now()");
 
-        b.HasOne(x => x.AdministrativeUnit)
-            .WithMany(u => u.Users)
-            .HasForeignKey(x => x.AdministrativeUnitId)
-            .HasConstraintName("fk_app_user_admin_unit")
-            .OnDelete(DeleteBehavior.Restrict);
+        // Không khai báo khoá ngoại: đơn vị hành chính do module khác sở hữu,
+        // nằm ở schema adm, và quy ước cấm khoá ngoại xuyên schema. Tính hợp
+        // lệ của administrative_unit_id được kiểm ở tầng ứng dụng.
 
         // Index unique một phần: chỉ áp dụng khi cột có giá trị, nhờ đó nhiều
         // bản ghi cùng để null vẫn hợp lệ.

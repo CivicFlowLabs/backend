@@ -48,4 +48,8 @@ public sealed class AdministrativeUnitRepository(AdmDbContext db)
 
         return await query.OrderBy(u => u.Code).ToListAsync(ct);
     }
+
+    /// <inheritdoc />
+    public Task<int> CountCurrentAsync(CancellationToken ct = default) =>
+        db.AdministrativeUnits.CountAsync(ct);
 }

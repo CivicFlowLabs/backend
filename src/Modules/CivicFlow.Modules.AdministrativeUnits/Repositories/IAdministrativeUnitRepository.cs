@@ -34,4 +34,10 @@ public interface IAdministrativeUnitRepository
         DateOnly at,
         AdmLevel? level = null,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// Đếm số đơn vị đang còn hiệu lực, không kéo bản ghi về bộ nhớ.
+    /// </summary>
+    /// <param name="ct">Thẻ huỷ tác vụ.</param>
+    Task<int> CountCurrentAsync(CancellationToken ct = default);
 }
