@@ -2,6 +2,7 @@ using System.Text;
 using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
+using CivicFlow.Modules.AdministrativeUnits;
 using CivicFlow.Modules.Identity;
 using CivicFlow.Shared.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,6 +22,13 @@ builder.Host.UseSerilog((context, services, configuration) => configuration
 // --- Module nghiệp vụ -------------------------------------------------
 // Mỗi module tự đăng ký DbContext và dịch vụ của mình.
 builder.Services.AddIdentityModule(builder.Configuration);
+builder.Services.AddAdministrativeUnitsModule(builder.Configuration);
+
+// Cho phép trả hình học PostGIS ra ngoài dưới dạng GeoJSON chuẩn thay vì
+// biểu diễn nội bộ của NetTopologySuite.
+builder.Services.ConfigureHttpJsonOptions(options =>
+    options.SerializerOptions.Converters.Add(
+        new NetTopologySuite.IO.Converters.GeoJsonConverterFactory()));
 
 // --- MVC --------------------------------------------------------------
 // Bộ lọc bọc phong bì được đăng ký toàn cục nên mọi endpoint đều trả về

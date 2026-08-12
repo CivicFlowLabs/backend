@@ -6,6 +6,12 @@ namespace CivicFlow.Shared.Common;
 /// </summary>
 public static class DbSchemas
 {
+    /// <summary>
+    /// Dữ liệu tham chiếu về đơn vị hành chính. Tách riêng khỏi schema
+    /// nghiệp vụ vì đây là danh mục dùng chung, có phiên bản theo thời gian.
+    /// </summary>
+    public const string Adm = "adm";
+
     public const string Identity = "identity";
     public const string Reports = "reports";
     public const string WorkOrders = "workorders";

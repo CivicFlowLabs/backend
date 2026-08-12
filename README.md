@@ -80,12 +80,26 @@ Lệnh này dựng PostgreSQL 17 (đã kèm PostGIS và pgvector) cùng Redis. N
 
 Nếu máy đang chạy PostgreSQL khác ở cổng 5432, đổi ánh xạ cổng trong `docker-compose.yml` thành `"5433:5432"` rồi sửa lại cổng trong chuỗi kết nối ở `.env`.
 
-### 4. Áp dụng migration
+### 4. Bật extension PostgreSQL (chỉ làm một lần cho mỗi máy)
+
+Module Đơn vị hành chính cần bốn extension. Ba trong số đó là *trusted extension* nên migration tự tạo được, nhưng `postgis` thì không — PostgreSQL bắt buộc quyền superuser để cài nó. Vì vậy phải chạy một lần bằng tài khoản superuser, trước khi áp migration:
+
+```bash
+psql -d civicflow_dev -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+```
+
+Sau bước này, câu `CREATE EXTENSION IF NOT EXISTS` mà migration sinh ra trở thành lệnh rỗng, nên tài khoản ứng dụng không cần quyền cao. Ba extension `pg_trgm`, `unaccent`, `btree_gist` để migration tự lo.
+
+### 5. Áp dụng migration
 
 Mỗi module có migration riêng, nên phải chỉ rõ project chứa migration và project khởi động:
 
 ```bash
 dotnet ef database update --project src/Modules/CivicFlow.Modules.Identity --startup-project src/CivicFlow.Api
+```
+
+```bash
+dotnet ef database update --project src/Modules/CivicFlow.Modules.AdministrativeUnits --startup-project src/CivicFlow.Api --context AdmDbContext
 ```
 
 Xem danh sách migration của một module:
@@ -94,7 +108,7 @@ Xem danh sách migration của một module:
 dotnet ef migrations list --project src/Modules/CivicFlow.Modules.Identity --startup-project src/CivicFlow.Api
 ```
 
-### 5. Chạy API
+### 6. Chạy API
 
 ```bash
 dotnet run --project src/CivicFlow.Api
@@ -106,7 +120,7 @@ dotnet run --project src/CivicFlow.Api
 | `http://localhost:5141/swagger` | Swagger UI (chỉ ở môi trường Development) |
 | `http://localhost:5141/api/v1/health/db` | Kiểm tra kết nối CSDL và phiên bản PostGIS |
 
-### 6. Chạy kiểm thử
+### 7. Chạy kiểm thử
 
 ```bash
 dotnet test

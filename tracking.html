@@ -161,7 +161,7 @@
     </div>
     <div class="card">
       <div class="label">Module</div>
-      <div class="value">1 / 5 đã khởi tạo<br><small>Identity · (Reports, WorkOrders, Knowledge, Engagement còn rỗng)</small></div>
+      <div class="value">2 / 6 đã khởi tạo<br><small>Identity, AdministrativeUnits · (Reports, WorkOrders, Knowledge, Engagement còn rỗng)</small></div>
     </div>
   </div>
 
@@ -212,7 +212,7 @@
     </div>
     <div class="card">
       <div class="label">Task đang làm</div>
-      <div class="value">Gỡ bí mật khỏi mã nguồn <small>· nhánh fix/remove-hardcoded-secrets, chờ merge</small></div>
+      <div class="value">Module ĐVHC — Task 1 xong <small>· chờ chốt hướng gỡ trùng với identity.administrative_unit</small></div>
     </div>
   </div>
 
@@ -352,6 +352,35 @@
             <span class="tag t-ok" style="margin-top:4px">✅ 31/31 test pass · git grep sạch</span>
           </td>
         </tr>
+        <tr>
+          <td><strong>BE-04</strong></td>
+          <td>Đơn vị hành chính</td>
+          <td>
+            Schema <code>adm</code> + tầng EF Core cho module Đơn vị hành chính
+            <br><small style="color:var(--muted)">Theo §5 và §6 tài liệu thiết kế ĐVHC. Bảng có phiên bản theo thời gian, ràng buộc EXCLUDE chặn chồng lấn, index không gian GiST và tìm kiếm mờ GIN</small>
+          </td>
+          <td class="mono">12/08/2026</td>
+          <td>
+            <ul>
+              <li><code>Modules/CivicFlow.Modules.AdministrativeUnits/</code> (module mới)</li>
+              <li><code>Entities/</code>: AdministrativeUnit, AdministrativeBoundary, UnitMapping, DatasetVersion, AdmLevel</li>
+              <li><code>Persistence/</code>: AdmDbContext, AdmDbContextFactory, 4 IEntityTypeConfiguration</li>
+              <li><code>Repositories/</code>: IAdministrativeUnitRepository + bản cài đặt</li>
+              <li><code>Persistence/Migrations/20260812100040_InitAdm.cs</code></li>
+              <li><code>CivicFlow.Shared/Common/DbSchemas.cs</code> · <code>CivicFlow.Api/Program.cs</code></li>
+            </ul>
+          </td>
+          <td>
+            <small style="color:var(--muted)">feat(adm): administrative unit schema and EF Core layer</small>
+          </td>
+          <td>
+            <span class="tag t-ok">✅ 4 bảng + 16 index tồn tại trong schema adm</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ EXCLUDE chặn chồng lấn, cho phép khoảng liền kề</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ valid_from/valid_to kiểu date · audit dùng timestamptz</span><br>
+            <span class="tag t-ok" style="margin-top:4px">✅ Build 0 warning · 33/33 test pass</span><br>
+            <span class="tag t-warn" style="margin-top:4px">⚠️ Chưa gỡ trùng với identity.administrative_unit</span>
+          </td>
+        </tr>
       </tbody>
     </table>
   </div>
@@ -445,6 +474,25 @@
           <td><span class="tag t-crit">Nghiêm trọng</span></td>
           <td>Refresh token lưu dạng thô, chưa băm — ai đọc được DB là chiếm được mọi phiên đăng nhập</td>
           <td class="mono">RefreshTokenConfiguration.cs</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-crit">Nghiêm trọng</span></td>
+          <td>
+            <strong>Hai bảng đơn vị hành chính cùng tồn tại.</strong> <code>identity.administrative_unit</code> (có sẵn: <code>code</code> UNIQUE, không có phiên bản thời gian, chỉ cấp xã)
+            và <code>adm.administrative_unit</code> (mới: có phiên bản thời gian, <code>code</code> cố ý không unique, cả cấp tỉnh).
+            <code>AppUser</code> đang có khoá ngoại vật lý trỏ vào bảng cũ, mà quy ước cấm khoá ngoại xuyên schema nên không chuyển thẳng sang bảng mới được.
+            Chờ chốt hướng xử lý trước khi xây thêm tính năng bám vào bảng cũ.
+          </td>
+          <td class="mono">Identity/Entities/AdministrativeUnit.cs · AppUser.cs</td>
+        </tr>
+        <tr>
+          <td><span class="tag t-warn">Trung bình</span></td>
+          <td>
+            Extension <code>postgis</code> không phải trusted extension nên migration không tự tạo được — lần dựng máy đầu tiên phải chạy
+            <code>CREATE EXTENSION</code> bằng quyền superuser một lần. Sau đó <code>CREATE EXTENSION IF NOT EXISTS</code> trong migration là no-op.
+            Ba extension còn lại (<code>pg_trgm</code>, <code>unaccent</code>, <code>btree_gist</code>) là trusted, không vướng.
+          </td>
+          <td class="mono">InitAdm migration · README</td>
         </tr>
         <tr>
           <td><span class="tag t-warn">Trung bình</span></td>
