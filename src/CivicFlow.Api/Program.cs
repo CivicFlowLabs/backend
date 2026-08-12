@@ -3,9 +3,11 @@ using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
 using CivicFlow.Modules.Identity;
+using CivicFlow.Modules.Identity.Persistence;
 using CivicFlow.Shared.Api;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
@@ -138,6 +140,24 @@ var app = builder.Build();
 // --- Serilog Request Logging -----------------------------------------
 app.UseSerilogRequestLogging();
 
+// --- Tự động áp dụng Migration & Seed Data khi ứng dụng khởi chạy ----
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var identityDbContext = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        await identityDbContext.Database.MigrateAsync();
+        await IdentityDataSeeder.SeedAsync(identityDbContext);
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "Không thể tự động áp dụng Migration hoặc Seed Data khi khởi chạy.");
+    }
+}
+
+// --- Đường ống xử lý request -----------------------------------------
+// Mã tương quan phải nằm ngoài cùng để middleware xử lý lỗi đọc được nó.
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
