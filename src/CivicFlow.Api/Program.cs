@@ -38,6 +38,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 // cùng một định dạng mà không cần lặp lại ở từng controller.
 builder.Services
     .AddControllers(options => options.Filters.Add<ApiResponseWrappingFilter>())
+    .AddApplicationPart(typeof(IdentityModuleExtensions).Assembly)
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>

@@ -66,3 +66,12 @@ public sealed class BadRequestException : AppException
     {
     }
 }
+
+/// <summary>Chưa đăng nhập hoặc thông tin đăng nhập không chính xác.</summary>
+public sealed class UnauthorizedException : AppException
+{
+    public UnauthorizedException(string message)
+        : base(ErrorCodes.Unauthorized, message, 401)
+    {
+    }
+}
