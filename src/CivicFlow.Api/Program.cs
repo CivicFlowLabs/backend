@@ -1,18 +1,56 @@
+using System.Security.Claims;
 using System.Text;
 using CivicFlow.Api.Filters;
 using CivicFlow.Api.Http;
 using CivicFlow.Api.Middleware;
+using CivicFlow.Infrastructure;
 using CivicFlow.Modules.AdministrativeUnits;
 using CivicFlow.Modules.AdministrativeUnits.Persistence;
 using CivicFlow.Modules.Identity;
 using CivicFlow.Modules.Identity.Persistence;
 using CivicFlow.Shared.Api;
+using CivicFlow.Shared.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
+
+// --- Nạp tự động file .env ở môi trường phát triển (Dev) --------------
+var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+if (!File.Exists(envPath))
+{
+    var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+    while (dir != null && !File.Exists(Path.Combine(dir.FullName, ".env")))
+    {
+        dir = dir.Parent;
+    }
+    if (dir != null)
+    {
+        envPath = Path.Combine(dir.FullName, ".env");
+    }
+}
+
+if (File.Exists(envPath))
+{
+    foreach (var line in File.ReadAllLines(envPath))
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.StartsWith('#')) continue;
+
+        var parts = trimmed.Split('=', 2);
+        if (parts.Length == 2)
+        {
+            var key = parts[0].Trim();
+            var val = parts[1].Trim().Trim('"').Trim('\'');
+            if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable(key)))
+            {
+                Environment.SetEnvironmentVariable(key, val);
+            }
+        }
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -96,11 +134,27 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidAudience = builder.Configuration["Jwt:Audience"] ?? "CivicFlowClients",
         ValidateLifetime = true,
-        ClockSkew = TimeSpan.Zero
+        ClockSkew = TimeSpan.Zero,
+        RoleClaimType = ClaimTypes.Role
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddInfrastructureServices();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(AuthConstants.Policies.RequireAdmin, policy =>
+        policy.RequireRole(AuthConstants.Roles.Admin));
+
+    options.AddPolicy(AuthConstants.Policies.RequireLeader, policy =>
+        policy.RequireRole(AuthConstants.Roles.Leader, AuthConstants.Roles.Admin));
+
+    options.AddPolicy(AuthConstants.Policies.RequireOfficer, policy =>
+        policy.RequireRole(AuthConstants.Roles.Officer, AuthConstants.Roles.Leader, AuthConstants.Roles.Admin));
+
+    options.AddPolicy(AuthConstants.Policies.RequireCitizen, policy =>
+        policy.RequireRole(AuthConstants.Roles.Citizen, AuthConstants.Roles.Officer, AuthConstants.Roles.Leader, AuthConstants.Roles.Admin));
+});
 
 // --- CORS -------------------------------------------------------------
 // Đọc origin từ cấu hình để phục vụ ứng dụng di động và ứng dụng máy tính.
