@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.2.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.6.0" />
     <ProjectReference Include="..\..\CivicFlow.Shared\CivicFlow.Shared.csproj" />
     <ProjectReference Include="..\..\CivicFlow.Infrastructure\CivicFlow.Infrastructure.csproj" />
   </ItemGroup>
@@ -11,5 +12,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
 
 </Project>

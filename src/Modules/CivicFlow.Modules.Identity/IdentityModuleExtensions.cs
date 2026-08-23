@@ -1,5 +1,6 @@
 using CivicFlow.Infrastructure.Persistence;
 using CivicFlow.Modules.Identity.Persistence;
+using CivicFlow.Modules.Identity.Services;
 using CivicFlow.Shared.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -23,6 +24,9 @@ public static class IdentityModuleExtensions
 
         services.AddDbContext<IdentityDbContext>(options =>
             options.UseCivicFlowNpgsql(connectionString, DbSchemas.Identity));
+
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IAuthService, AuthService>();
 
         return services;
     }
